@@ -8,19 +8,12 @@ from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
-from helper import analyze_folder  # your async analyzer (or RepositoryAnalyzer if imported)
+from helper import RepositoryAnalyzer 
 
 load_dotenv()
 
 
 class RepoChatbot:
-    """
-    RepoChatbot manages a full Retrieval-Augmented Generation (RAG) workflow:
-      • Clones a GitHub repo
-      • Analyzes it using helper/analyzer
-      • Indexes summaries into Qdrant
-      • Builds a RetrievalQA chain for chatting
-    """
 
     def __init__(
         self,
@@ -43,6 +36,7 @@ class RepoChatbot:
         self.qdrant = None
         self.retriever = None
         self.rag_chain = None
+        self.analyzer = RepositoryAnalyzer(self.repo_url)
 
     # ================================================================
     # 1️⃣ CLONE GITHUB REPOSITORY
@@ -62,7 +56,7 @@ class RepoChatbot:
         if not self.repo_dir:
             self.clone_repository()
         print("🔍 Analyzing repository...")
-        self.analysis = await analyze_folder(self.repo_dir)
+        self.analysis = await self.analyzer.analyze_folder(self.repo_dir)
         print("✅ Analysis complete.")
         return self.analysis
 
@@ -108,8 +102,27 @@ class RepoChatbot:
             raise ValueError("Retriever not initialized. Run build_vector_store() first.")
 
         llm = ChatOpenAI(model=self.llm_model, temperature=self.temperature)
-        self.rag_chain = RetrievalQA.from_chain_type(llm=llm, retriever=self.retriever)
-        print("🤖 RAG chain created and ready for chatting.")
+        from langchain.prompts import PromptTemplate
+        from langchain.chains import RetrievalQA
+
+        CUSTOM_PROMPT = PromptTemplate(
+            template=(
+                "You are an expert software engineer analyzing a GitHub repository.\n"
+                "Use the provided repository context to answer the user's question clearly and concisely.\n\n"
+                "Repository Context:\n{context}\n\n"
+                "User Question: {question}\n\n"
+                "Your answer:"
+            ),
+            input_variables=["context", "question"],
+        )
+
+        self.rag_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            retriever=self.retriever,
+            chain_type_kwargs={"prompt": CUSTOM_PROMPT},
+        )
+
+        print("🤖 RAG chain created with custom prompt and ready for chatting.")
         return self.rag_chain
 
     # ================================================================
