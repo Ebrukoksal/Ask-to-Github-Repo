@@ -1,0 +1,12 @@
+{
+  "goal_prompt": {
+    "input_variables": ["filename", "content"],
+    "template":
+      "You are an expert software engineer.\nIn one clear sentence, describe the **goal** of this code file `{filename}`.\nFocus on what this code is designed to achieve or its role in the system.\n\nCODE:\n{content}"
+  },
+  "summary_prompt": {
+    "input_variables": ["filename", "content"],
+    "template":
+      "You are an expert developer writing technical documentation.\nSummarize `{filename}` in 3–5 sentences explaining **how** the code works, its structure, and interactions between components.\n\nCODE:\n{content}"
+  }
+}

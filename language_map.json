@@ -1,0 +1,17 @@
+{
+  ".py": "Python",
+  ".js": "JavaScript",
+  ".ts": "TypeScript",
+  ".tsx": "React (TypeScript)",
+  ".jsx": "React (JavaScript)",
+  ".java": "Java",
+  ".cpp": "C++",
+  ".c": "C",
+  ".html": "HTML",
+  ".css": "CSS",
+  ".json": "JSON",
+  ".yml": "YAML",
+  ".yaml": "YAML",
+  ".md": "Markdown",
+  ".sh": "Shell"
+}
