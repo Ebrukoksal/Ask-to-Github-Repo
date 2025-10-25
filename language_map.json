@@ -13,5 +13,10 @@
   ".yml": "YAML",
   ".yaml": "YAML",
   ".md": "Markdown",
-  ".sh": "Shell"
+  ".sh": "Shell",
+  ".cjs": "JavaScript",
+  ".mjs": "JavaScript",
+  ".vue": "Vue",
+  ".scss": "CSS",
+  ".sass": "CSS"  
 }
