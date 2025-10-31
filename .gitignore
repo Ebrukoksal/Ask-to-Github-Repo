@@ -1,3 +1,6 @@
 .env
 summaries.json
 repo_attributes.json
+graph.html
+repo_graph.html
+repos/

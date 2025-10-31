@@ -10,6 +10,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 import dotenv
+import stat
+import shutil
 
 
 class RepositoryAnalyzer:
@@ -57,12 +59,69 @@ class RepositoryAnalyzer:
     # 1️⃣ Clone GitHub Repository
     # ================================================================
     def clone_repository(self) -> str:
-        tmp_dir = tempfile.mkdtemp()
-        print(f"📦 Cloning {self.repo_url} into {tmp_dir}...")
-        Repo.clone_from(self.repo_url, tmp_dir)
+        import shutil
+        import pathlib
+        import os
+        from git import Repo
+
+        base_dir = os.path.join(os.getcwd(), "repos")
+        os.makedirs(base_dir, exist_ok=True)
+
+        repo_name = self.repo_url.rstrip("/").split("/")[-1]
+        repo_path = os.path.join(base_dir, repo_name)
+
+        if os.path.exists(repo_path):
+            print(f"⚠️  {repo_path} already exists. Removing old copy...")
+            self.safe_rmtree(repo_path)
+            if os.path.exists(repo_path):
+                print("IT EXISTS")
+ 
+        print(f"📦 Cloning {self.repo_url} into {repo_path}...")
+        Repo.clone_from(self.repo_url, repo_path)
+        self.fix_permissions_after_clone(repo_path)
         print("✅ Repository cloned successfully.")
-        self.repo_dir = tmp_dir
-        return tmp_dir
+
+        self.repo_dir = str(pathlib.Path(repo_path).resolve())
+        return self.repo_dir
+
+    def fix_permissions_after_clone(self, folder_path):
+        """Fix permissions on a freshly cloned git repository"""
+        if not os.path.exists(folder_path):
+            return
+        
+        # Set proper permissions for directories and files
+        for root, dirs, files in os.walk(folder_path):
+            # Fix directory permissions
+            for dir_name in dirs:
+                dir_path = os.path.join(root, dir_name)
+                try:
+                    # Give full permissions to directories
+                    os.chmod(dir_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                except Exception as e:
+                    print(f"Could not fix permissions for directory {dir_path}: {e}")
+            
+            # Fix file permissions
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                try:
+                    # Give read/write permissions to files
+                    os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+                except Exception as e:
+                    print(f"Could not fix permissions for file {file_path}: {e}")
+    def safe_rmtree(self, folder_path):
+        """
+        Safely remove a directory tree
+        """
+        def handle_remove_readonly(func, path, exc):
+            """Fix permissions and retry deletion"""
+            if os.path.exists(path):
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+        
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path, onerror=handle_remove_readonly)
+            return True
+        return False
 
     # ================================================================
     # 2️⃣ Detect File Language
