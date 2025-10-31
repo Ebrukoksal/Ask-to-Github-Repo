@@ -227,9 +227,19 @@ class RepositoryAnalyzer:
         tasks = []
         for item in os.listdir(path):
             child_path = os.path.join(path, item)
+            # skip special / permission-denied folders
+            if item in {".git", "node_modules", "__pycache__", ".venv"}:
+                continue
+            if not os.access(child_path, os.R_OK):
+                print(f"⚠️ Skipping {child_path}: permission denied.")
+                continue
             tasks.append(self.analyze_folder(child_path))
 
-        children = await tqdm_asyncio.gather(*tasks, desc=f"📁 {os.path.basename(path)}", leave=False)
+        if tasks:
+            children = await tqdm_asyncio.gather(*tasks, desc=f"📁 {os.path.basename(path)}", leave=False)
+        else:
+            children = []
+
         return {"folder_path": path, "children": children}
 
     # ================================================================
